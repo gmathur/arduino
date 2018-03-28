@@ -316,16 +316,13 @@ void roamer()
     else
       {
         // Nothing Ahead!
-        if ((millis() - last_looked_around) < 3000)
+        if ((millis() - last_looked_around) < 2000)
         {
           //Servo should be tilted down - check left and right all the time
           drive(1);
         }
         else
         {
-          //Haven't looked up in a bit, lets check
-          drive(0);
-      
           right=look(135);
           left=look(45);
           straight=look(90);
