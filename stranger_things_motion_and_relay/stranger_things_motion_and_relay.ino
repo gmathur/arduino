@@ -176,7 +176,7 @@ void flash_word_and_relay(String str) {
     }
     delay(50);
 
-    if (flash % 4 == 0) {
+    if (flash % 2 == 0) {
       set_relay();
     }
   
@@ -185,14 +185,14 @@ void flash_word_and_relay(String str) {
     }
     delay(50);
 
-    if (flash % 4 == 0) {
+    if (flash % 2 == 0) {
       reset_relay();
     }
   }
 }
 
 void randomLoop() {
-  int z = random (0, 6);
+  int z = random (0, 4);
     
   switch(z) {
     case 0:
@@ -212,9 +212,7 @@ void randomLoop() {
       break;      
     case 3:
       flash_word("abcdefghijklmnopqrstuvwxy");
-      break;      
-    default: 
-      color_loop();
+      break;
   }
 }
 
@@ -231,6 +229,8 @@ void motion_triggered() {
   for (int i=0; i < 1; i++) {
     randomLoop();
   }
+
+  color_loop();
   
   blackout();
   reset_relay();
