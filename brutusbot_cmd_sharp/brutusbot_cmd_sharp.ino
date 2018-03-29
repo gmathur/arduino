@@ -61,9 +61,10 @@ int turnLeft = 0;
 int look(int dir);
 void drive(int command);
 void roamer(void);
-void checkDirection(void);
-void somethingAhead(void);
+void obstacleAhead(void);
+void obstacleRightOrLeft(int left, int right);
 void somethingAheadDuringRun(int straight, int left, int right);
+void checkNavDirection(void);
 
 //Main Setup Function
 void setup() {
@@ -264,13 +265,16 @@ int look(int dir) {
   return(reading); 
 }
 
-void somethingAhead() {
+void obstacleAhead() {
+  Serial.print("Obstacle ahead... ");
   drive(0);
   int dir;
   int right=look(135);
   int left=look(45);
   int straight=look(90);
-  if (right > left) {
+  checkNavDirection();
+  
+  if ((right > left) || turnLeft) {
     //Turn left until clear
     dir=3;
   }
@@ -287,12 +291,41 @@ void somethingAhead() {
   drive(0);
 }
 
+void obstacleRightOrLeft(int left, int right) {
+  //Straight was fine, something is to left or right.
+  if (right > (threshold*2)) {
+    //Something off our Starboard Side Captain!
+    Serial.print("Obstacle right... ");
+    look(135);
+    drive(3);
+    while (right > (threshold*2)) {
+      right=look(135);
+    }
+    delay(reaction_delay);
+    drive(0);
+    look(90);
+  }
+  else {
+    //Something off our Port Side Captain!
+    Serial.print("Obstacle left... ");
+    look(45);
+    drive(4);
+    while (left > (threshold*2)) {
+      left=look(45);
+    }
+    delay(reaction_delay);
+    drive(0);
+    look(90);
+  }
+}
+
 void somethingAheadDuringRun(int straight, int left, int right) {
   drive(0);
   if ((straight > threshold) || ((right > (threshold*2)) && (left > (threshold*2)))) {
       //Interesting scenario - looked up and something is in our way!
       //Backup, and reasses?
       //Same if we are wedged left and right
+      Serial.print("Obstacle ahead. Back up... ");
       drive(2);
       while (straight > threshold) {
         straight=look(90);
@@ -301,30 +334,7 @@ void somethingAheadDuringRun(int straight, int left, int right) {
       drive(0);
     }
     else {
-      //Straight was fine, something is to left or right.
-      if (right > (threshold*2)) {
-        //Something off our Starboard Side Captain!
-        look(135);
-        drive(3);
-        while (right > (threshold*2)) {
-          right=look(135);
-        }
-        delay(reaction_delay);
-        drive(0);
-        look(90);
-      }
-      else {
-        //Something off our Port Side Captain!
-        look(45);
-        drive(4);
-        while (left > (threshold*2)) {
-          left=look(45);
-        }
-        delay(reaction_delay);
-        drive(0);
-        look(90);
-      }
-      
+      obstacleRightOrLeft(left, right);
     }
 }
 
@@ -340,9 +350,11 @@ void roamer() {
   last_looked_around=millis()-5000;
   while (1) {
     straight=look(90);
+    checkNavDirection();
+    
     if (straight > threshold) {
         // Something Ahead!
-        somethingAhead();
+        obstacleAhead();
     } else {
         // Nothing Ahead!
         if ((millis() - last_looked_around) < 2000) {
@@ -364,7 +376,7 @@ void roamer() {
   }//End While Loop
 }//End of Roamer Function
 
-void checkDirection() {
+void checkNavDirection() {
   turnLeft = digitalRead(leftTurnPin);
   turnRight = digitalRead(rightTurnPin);
 
