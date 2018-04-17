@@ -28,34 +28,26 @@
 #define bit4800Delay 188 
 #define halfBit4800Delay 94*/
 
-#define threshold 200
+#define threshold 300
 #define delay_per_degree 4
 #define reaction_delay 150
 #define pan_offset -8
 #define headlight1 19    // Headlight LEDs connected to Analog 5
 #define headlight2 18    // Headlight LEDs connected to Analog 5
-#define drivespeed 255
-#define reversespeed 225
-#define spinspeed 190
-
-#define NODRIVE 0        // Set to 1 to disable drive
+#define reversespeed 180
+#define spinspeed 120
 
 // Setup objects from Libraries
 Servo servo_pan;
 
 // Initialize Global Variables
+int NODRIVE = 0;
 int ledPin = 13;         // LED connected to digital pin 13
 int lastlook=0;
 int distance;
 int watchdog=0;
 unsigned long last_event = 0;
-int left_motor=150;      // Set left motor speed
-int right_motor=140;     // Set right motor speed
-int spin_speed=140;      // Motor Speed during a speed
-int rightTurnPin = 15;   // Indicate we need to right turn
-int leftTurnPin = 16;    // Indicate we need to turn left
-int turnRight = 0;
-int turnLeft = 0;
+int drivespeed = 200;
 
 // Function Declarations *****  (This helps read main code)
 int look(int dir);
@@ -86,8 +78,6 @@ void setup() {
   digitalWrite(ledPin,LOW);
   digitalWrite(headlight1,LOW);
   digitalWrite(headlight2,LOW);
-  pinMode(rightTurnPin, INPUT);
-  pinMode(leftTurnPin, INPUT);
 }
 
 
@@ -117,7 +107,7 @@ void drive(int command) {
   int rightspeed;
   int leftspeed;
   
-  rightspeed=drivespeed-20;
+  rightspeed=drivespeed;
   leftspeed=drivespeed;
   
   if (NODRIVE == 1) {
@@ -139,7 +129,7 @@ void drive(int command) {
     
     case 1:
     // Forward
-    Serial.println("Forward");
+//    Serial.println("Forward");
     digitalWrite(headlight1,HIGH);
     digitalWrite(headlight2,HIGH);
     analogWrite(3,leftspeed);
@@ -231,7 +221,7 @@ int look(int dir) {
   
   
   reading=sample/8;
-  //Serial.printlnln(reading);
+//  Serial.println(reading);
   
   if (dir == 90) { //If We're looking ahead
     if (reading > threshold) {
@@ -274,7 +264,7 @@ void obstacleAhead() {
   int straight=look(90);
   checkNavDirection();
   
-  if ((right > left) || turnLeft) {
+  if (right > left) {
     //Turn left until clear
     dir=3;
   }
@@ -377,12 +367,55 @@ void roamer() {
 }//End of Roamer Function
 
 void checkNavDirection() {
-  turnLeft = digitalRead(leftTurnPin);
-  turnRight = digitalRead(rightTurnPin);
+  if (Serial.available() > 0) {
+    char incomingChar = Serial.read();
 
-  Serial.print("Turn indicators - Left turn: ");
-  Serial.print(turnLeft);
-  Serial.print(" Right turn: ");
-  Serial.println(turnRight);
+    if (incomingChar == 'L') {
+      Serial.println("Nav: Turn left");
+      drive(0);
+      delay(reaction_delay);
+      drive(3);
+      delay(reaction_delay);
+    }
+    else if (incomingChar == 'R') {
+      Serial.println("Nav: Turn right");
+      drive(0);
+      delay(reaction_delay);
+      drive(1);
+      delay(reaction_delay);
+    }
+    else if (incomingChar == 'B') {
+      Serial.println("Nav: Reversing");
+      drive(0);
+      delay(reaction_delay);
+      drive(2);
+      delay(reaction_delay);
+    }    
+    else if (incomingChar == 'U') {
+      Serial.println("Increasing speed");
+      if (drivespeed < 245) {
+        drivespeed = drivespeed + 10;
+      } else {
+        drivespeed = 255;
+      }
+    }
+    else if (incomingChar == 'D') {
+      Serial.println("Decreasing speed");
+      if (drivespeed > 10) {
+        drivespeed = drivespeed - 10;
+      } else {
+        drivespeed = 0;
+      }
+    }    
+    else if (incomingChar == 'T') {
+      if (NODRIVE == 0) {
+        Serial.println("**** Disabling drive ****");
+        NODRIVE = 1;
+      } else {
+        Serial.println("**** Enabling drive ****");        
+        NODRIVE = 0;
+      }
+    }
+  }
 }
 
